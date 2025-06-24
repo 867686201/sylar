@@ -15,7 +15,7 @@ namespace sylar
 class LogEvent;
 class Logger;
 class LoggerFormatter;
-class LoggerAppender;
+class LogAppender;
 class FileLogAppender;
 class StdoutLogAppender;
 
@@ -23,7 +23,7 @@ class StdoutLogAppender;
 using LogEventPtr = std::shared_ptr<LogEvent>;
 using LoggerPtr = std::shared_ptr<Logger>;
 using LogFormatterPtr = std::shared_ptr<LoggerFormatter>;
-using LogAppenderPtr = std::shared_ptr<LoggerAppender>;
+using LogAppenderPtr = std::shared_ptr<LogAppender>;
 using FileLogAppenderPtr = std::shared_ptr<FileLogAppender>;
 using StdoutLogAppenderPtr = std::shared_ptr<StdoutLogAppender>;
 
@@ -59,6 +59,31 @@ private:
 
 };
 
+// 日志接收器  抽象基类 定义接口名称
+class LogAppender
+{
+public:
+    // 抽象基类的构造函数不能是虚函数
+    LogAppender() = default;
+    // 抽象基类的析构函数必须是虚函数, 为了父类指针调用子类的析构函数来析构子类对象
+    virtual ~LogAppender(){};
+
+    // 没有实现的纯虚函数, 使得这个类叫做抽象基类, 必须实现该方法类才能实例化       
+    virtual void log(LogLevel level, LogEventPtr event) = 0; 
+
+    // 普通函数, 提供固定的实现         而虚函数提供默认的实现, 可以重写
+    void setFormatter(LogFormatterPtr val) {m_formatter = val;}
+    LogFormatterPtr getFormatter() const { return m_formatter;}
+
+    LogLevel getLevel() const { return m_level;}
+    void setLevel(LogLevel val) { m_level = val;}
+
+protected:
+    LogLevel m_level = LogLevel::DEBUG;
+    LogFormatterPtr m_formatter;
+};
+
+
 // 日志器 
 class Logger
 {
@@ -89,35 +114,12 @@ private:
 
 };
 
-// 日志接收器  抽象基类 定义接口名称
-class LogAppender
-{
-public:
-    // 抽象基类的构造函数不能是虚函数
-    LogAppender() = default;
-    // 抽象基类的析构函数必须是虚函数, 为了父类指针调用子类的析构函数来析构子类对象
-    virtual ~LogAppender(){};
-
-    // 没有实现的纯虚函数, 使得这个类叫做抽象基类, 必须实现该方法类才能实例化       
-    virtual void log(LoggerPtr logger, LogLevel level, LogEventPtr event) = 0; 
-
-    // 普通函数, 提供固定的实现         而虚函数提供默认的实现, 可以重写
-    void setFormatter(LogFormatterPtr val) {m_formatter = val;}
-    LogFormatterPtr getFormatter() const { return m_formatter;}
-
-    LogLevel getLevel() const { return m_level;}
-    void setLevel(LogLevel val) { m_level = val;}
-
-protected:
-    LogLevel m_level = LogLevel::DEBUG;
-    LogFormatterPtr m_formatter;
-};
 
 //输出到控制台的Appender
 class StdoutLogAppender : public LogAppender 
 {
 public:
-    void log(LoggerPtr logger, LogLevel level, LogEventPtr event) override;
+    void log(LogLevel level, LogEventPtr event) override;
 };
     
 //定义输出到文件的Appender
@@ -125,7 +127,7 @@ class FileLogAppender : public LogAppender
 {
 public:
     FileLogAppender(const std::string& filename);
-    void log(LoggerPtr logger, LogLevel level, LogEventPtr event) override;
+    void log(LogLevel level, LogEventPtr event) override;
 
     //重新打开文件，文件打开成功返回true
     bool reopen();
