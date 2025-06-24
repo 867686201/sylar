@@ -1,4 +1,5 @@
 #include "log.h"
+#include <iostream>
 
 namespace sylar{
 
@@ -9,10 +10,26 @@ Logger::Logger(const std::string& name)
 {
 
 }
+void Logger::addAppender(LogAppenderPtr appender)
+{
+    m_appenders.push_back(appender);
+}
+
+void Logger::delAppender(LogAppenderPtr appender)
+{
+    for(auto it = m_appenders.begin(); it != m_appenders.end(); it++)
+    {
+        if(*it == appender)
+        {
+            m_appenders.erase(it);
+            break;
+        }
+    }
+}
 
 void Logger::log(LogLevel level, LogEventPtr event)
 {
-    if(level > m_level)
+    if(level >= m_level)
     {
         for(auto& i : m_appenders)
         {
@@ -40,6 +57,38 @@ void Logger::error(LogEventPtr event)
 void Logger::fatal(LogEventPtr event)
 {
     log(LogLevel::FATAL, event);
+}
+
+void StdoutLogAppender::log(LogLevel level, LogEventPtr event) 
+{
+    if(level >= m_level)
+    {
+        std::cout << m_formatter->format(event);
+    }
+}
+
+FileLogAppender::FileLogAppender(const std::string& filename)
+    : m_filename(filename)
+{
+
+}
+
+void FileLogAppender::log(LogLevel level, LogEventPtr event) 
+{
+    if(level >= m_level)
+    {
+        m_filestream << m_formatter->format(event);
+    }
+}
+
+bool FileLogAppender::reopen()
+{
+    if(m_filestream)
+    {
+        m_filestream.close();
+    }
+    m_filestream.open(m_filename);
+    return !m_filestream;
 }
 
 }

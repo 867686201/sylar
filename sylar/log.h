@@ -14,7 +14,7 @@ namespace sylar
 // 前向声明
 class LogEvent;
 class Logger;
-class LoggerFormatter;
+class LogFormatter;
 class LogAppender;
 class FileLogAppender;
 class StdoutLogAppender;
@@ -22,7 +22,7 @@ class StdoutLogAppender;
 
 using LogEventPtr = std::shared_ptr<LogEvent>;
 using LoggerPtr = std::shared_ptr<Logger>;
-using LogFormatterPtr = std::shared_ptr<LoggerFormatter>;
+using LogFormatterPtr = std::shared_ptr<LogFormatter>;
 using LogAppenderPtr = std::shared_ptr<LogAppender>;
 using FileLogAppenderPtr = std::shared_ptr<FileLogAppender>;
 using StdoutLogAppenderPtr = std::shared_ptr<StdoutLogAppender>;
@@ -136,5 +136,13 @@ private:
     std::ofstream m_filestream;
 };
 
+class LogFormatter
+{
+public:
+    std::ostream& format(std::ostream& os, LogEventPtr event);
+    std::string format(LogEventPtr event);
+private:
+
+};
 
 }
