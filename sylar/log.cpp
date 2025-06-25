@@ -27,8 +27,10 @@ void Logger::delAppender(LogAppenderPtr appender)
     }
 }
 
+// 用于记录日志事件，判断日志是否需要输出，并通过接收器和格式化器进行输出
 void Logger::log(LogLevel level, LogEventPtr event)
 {
+    // 当等级大于 `m_level` 时输出，即**更严重**时输出
     if(level >= m_level)
     {
         for(auto& i : m_appenders)
@@ -38,6 +40,7 @@ void Logger::log(LogLevel level, LogEventPtr event)
     }
 }
 
+// 对 `log` 的封装，简化不同日志级别的记录
 void Logger::debug(LogEventPtr event)
 {
     log(LogLevel::DEBUG, event);

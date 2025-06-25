@@ -18,6 +18,7 @@ class LogFormatter;
 class LogAppender;
 class FileLogAppender;
 class StdoutLogAppender;
+class FormatItem;
 
 
 using LogEventPtr = std::shared_ptr<LogEvent>;
@@ -26,6 +27,7 @@ using LogFormatterPtr = std::shared_ptr<LogFormatter>;
 using LogAppenderPtr = std::shared_ptr<LogAppender>;
 using FileLogAppenderPtr = std::shared_ptr<FileLogAppender>;
 using StdoutLogAppenderPtr = std::shared_ptr<StdoutLogAppender>;
+using FormatItemPtr = std::shared_ptr<FormatItem>;
 
 enum class LogLevel
 {
@@ -59,31 +61,6 @@ private:
 
 };
 
-// 日志接收器  抽象基类 定义接口名称
-class LogAppender
-{
-public:
-    // 抽象基类的构造函数不能是虚函数
-    LogAppender() = default;
-    // 抽象基类的析构函数必须是虚函数, 为了父类指针调用子类的析构函数来析构子类对象
-    virtual ~LogAppender(){};
-
-    // 没有实现的纯虚函数, 使得这个类叫做抽象基类, 必须实现该方法类才能实例化       
-    virtual void log(LogLevel level, LogEventPtr event) = 0; 
-
-    // 普通函数, 提供固定的实现         而虚函数提供默认的实现, 可以重写
-    void setFormatter(LogFormatterPtr val) {m_formatter = val;}
-    LogFormatterPtr getFormatter() const { return m_formatter;}
-
-    LogLevel getLevel() const { return m_level;}
-    void setLevel(LogLevel val) { m_level = val;}
-
-protected:
-    LogLevel m_level = LogLevel::DEBUG;
-    LogFormatterPtr m_formatter;
-};
-
-
 // 日志器 
 class Logger
 {
@@ -115,6 +92,31 @@ private:
 };
 
 
+// 日志接收器  抽象基类 定义接口名称
+class LogAppender
+{
+public:
+    // 抽象基类的构造函数不能是虚函数
+    LogAppender() = default;
+    // 抽象基类的析构函数必须是虚函数, 为了父类指针调用子类的析构函数来析构子类对象
+    virtual ~LogAppender(){};
+
+    // 没有实现的纯虚函数, 使得这个类叫做抽象基类, 必须实现该方法类才能实例化       
+    virtual void log(LogLevel level, LogEventPtr event) = 0; 
+
+    // 普通函数, 提供固定的实现         而虚函数提供默认的实现, 可以重写
+    void setFormatter(LogFormatterPtr val) {m_formatter = val;}
+    LogFormatterPtr getFormatter() const { return m_formatter;}
+
+    LogLevel getLevel() const { return m_level;}
+    void setLevel(LogLevel val) { m_level = val;}
+
+protected:
+    LogLevel m_level = LogLevel::DEBUG;
+    LogFormatterPtr m_formatter;
+};
+
+
 //输出到控制台的Appender
 class StdoutLogAppender : public LogAppender 
 {
@@ -139,10 +141,27 @@ private:
 class LogFormatter
 {
 public:
+    // 接收 pattern 进行构造
+    LogFormatter(const std::string& pattern); 
     std::ostream& format(std::ostream& os, LogEventPtr event);
     std::string format(LogEventPtr event);
+    const std::string& getPattern() const {return m_pattern; }
 private:
+    void init();                        // 解析模板函数
+    std::string m_pattern;              // 格式模版
+    std::vector<FormatItemPtr> m_items; // 解析后的格式
+};
+
+// 策略基类
+// 即定义抽象基类和多个具体实现
+// 然后可以用策略类来切换子类
+class FormatItem
+{
+public:
+    virtual ~FormatItem() = default;
+    virtual void format(std::ostream& os, LogEventPtr event) = 0;
 
 };
+
 
 }
