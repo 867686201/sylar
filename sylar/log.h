@@ -45,8 +45,29 @@ class LogEvent
 {
 public:
     LogEvent(LoggerPtr logger, LogLevel level
-        , const char* file, int32_t m_line, uint32_t elapse
-        , uint32_t thread_id, uint32_t fiber_id, uint64_t time);
+        , const char* file, int32_t line, uint32_t elapse
+        , uint32_t threadId, uint32_t fiberId, uint64_t time
+        , const std::string& threadName)
+        :
+        m_logger(logger), m_level(level),
+        m_file(file), m_line(line), m_threadId(threadId),
+        m_fiberId(fiberId), m_time(time), m_threadName(threadName)
+    {}
+        
+    // 添加getter方法
+    const char* getFile() const { return m_file; }
+    int32_t getLine() const { return m_line; }
+    uint32_t getElapse() const { return m_elapse; }
+    uint32_t getThreadId() const { return m_threadId; }
+    uint32_t getFiberId() const { return m_fiberId; }
+    uint64_t getTime() const { return m_time; }
+    const std::string& getThreadName() const { return m_threadName; }
+    LogLevel getLevel() const { return m_level; }
+    LoggerPtr getLogger() const { return m_logger; }
+    
+    // 添加消息相关方法
+    std::stringstream& getSS() { return m_ss; }
+    const std::string getContent() const { return m_ss.str(); }
     
 private:
     const char* m_file = nullptr;  //文件名
@@ -55,7 +76,9 @@ private:
     uint32_t m_threadId = 0;       //线程id
     uint32_t m_fiberId = 0;        //协程id
     uint64_t m_time = 0;           //时间戳
-    
+    std::string m_threadName;      //线程名称       读多写少, 内存连续，读取快
+    std::stringstream m_ss;        //日志消息流     写多读少, 缓冲区优化，构建快
+
     LoggerPtr m_logger;
     LogLevel m_level;
 
@@ -185,6 +208,8 @@ public:
     virtual ~FormatItem() = default;
     virtual void format(std::ostream& os, LogEventPtr event) = 0;
 protected:
+    // 封装格式转换函数
+    void formatOutput(std::ostream& os, const std::string& content) const;
     bool m_leftAlign;
     int m_minWidth;
     int m_maxWidth;
@@ -194,11 +219,11 @@ protected:
 // 解析时, 处理好数据后, 构造出对应的子类, 传入 m_items
 class StringFormatItem : public FormatItem
 {
+public:
     StringFormatItem(const std::string& s)
       : FormatItem(Spec{}), m_str(s) {}
     StringFormatItem(const Spec& spec)
       : FormatItem(spec), m_str(spec.optionalPara) {}
-public:
     void format(std::ostream& os, LogEventPtr event) override; 
 private:
     std::string m_str;
@@ -243,4 +268,50 @@ public:
     void format(std::ostream& os, LogEventPtr event) override; 
 private:
 };
+
+class FileFormatItem : public FormatItem
+{
+public:
+    FileFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+class LineFormatItem : public FormatItem
+{
+public:
+    LineFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+class ThreadIdFormatItem : public FormatItem
+{
+public:
+    ThreadIdFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+class FiberIdFormatItem : public FormatItem
+{
+public:
+    FiberIdFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+class ElapseFormatItem : public FormatItem
+{
+public:
+    ElapseFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+class ThreadNameFormatItem : public FormatItem
+{
+public:
+    ThreadNameFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+
 }

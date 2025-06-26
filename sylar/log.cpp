@@ -1,5 +1,6 @@
 #include "log.h"
 #include <iostream>
+#include <iomanip>
 
 namespace sylar{
 
@@ -106,6 +107,12 @@ public:
             case 'c': return std::make_shared<LoggerNameFormatItem>(spec);
             case 'm': return std::make_shared<MessageFormatItem>(spec);
             case 'n': return std::make_shared<NewLineFormatItem>(spec);
+            case 'f': return std::make_shared<FileFormatItem>(spec);      // 文件名
+            case 'l': return std::make_shared<LineFormatItem>(spec);      // 行号
+            case 't': return std::make_shared<ThreadIdFormatItem>(spec);  // 线程ID
+            case 'F': return std::make_shared<FiberIdFormatItem>(spec);   // 协程ID
+            case 'r': return std::make_shared<ElapseFormatItem>(spec);    // 运行时间
+            case 'N': return std::make_shared<ThreadNameFormatItem>(spec);    // 线程名称
             default: return std::make_shared<StringFormatItem>(spec);
         }
     }
@@ -186,10 +193,31 @@ void LogFormatter::convert()
 
 }
 
+// 传入输出流和 string, 根据 FormatItem 内部的格式, 输出对应的 os
+// 调用时 从 os << str 变为 formatOutput(os, str)
+void FormatItem::formatOutput(std::ostream& os, const std::string& content) const
+{
+    std::string finalContent = content;
+    // 应用最大宽度限制（截断）
+    if (m_maxWidth > 0 && finalContent.length() > static_cast<size_t>(m_maxWidth)) {
+        finalContent = finalContent.substr(0, m_maxWidth);
+    }
+    
+    // 应用最小宽度和对齐方式
+    if (m_minWidth > 0) {
+        if (m_leftAlign) {
+            os << std::left << std::setw(m_minWidth);   // iomanip
+        } else {
+            os << std::right << std::setw(m_minWidth);
+        }
+    }
+    
+    os << finalContent;
+}
 
 void StringFormatItem::format(std::ostream& os, LogEventPtr event)
 {
-    os << m_str;
+    formatOutput(os, m_str);
 }
 
 void DateFormatItem::format(std::ostream& os, LogEventPtr event)
