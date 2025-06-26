@@ -148,8 +148,26 @@ public:
     const std::string& getPattern() const {return m_pattern; }
 private:
     void init();                        // 解析模板函数
+
+    void convert();
+
+    bool eof() const { return m_pos >= m_pattern.size(); }
+    char peek() const { return eof() ? '\0' : m_pattern[m_pos]; }
+    char get()  { return eof() ? '\0' : m_pattern[m_pos++]; }
+
     std::string m_pattern;              // 格式模版
     std::vector<FormatItemPtr> m_items; // 解析后的格式
+    size_t m_pos = 0;                   // 下标
+};
+
+// 转换处理时结构体
+struct Spec
+{
+    bool leftAlign = false;
+    int minWidth = -1;
+    int maxWidth = -1;
+    char convertType = '\0';
+    std::string optionalPara;
 };
 
 // 策略基类
@@ -158,10 +176,71 @@ private:
 class FormatItem
 {
 public:
+    FormatItem(const Spec& spec)
+        : m_leftAlign(spec.leftAlign),  
+        m_minWidth(spec.minWidth), 
+        m_maxWidth(spec.maxWidth), 
+        m_optionalPara(spec.optionalPara)
+    {};
     virtual ~FormatItem() = default;
     virtual void format(std::ostream& os, LogEventPtr event) = 0;
-
+protected:
+    bool m_leftAlign;
+    int m_minWidth;
+    int m_maxWidth;
+    std::string m_optionalPara;
 };
 
+// 解析时, 处理好数据后, 构造出对应的子类, 传入 m_items
+class StringFormatItem : public FormatItem
+{
+    StringFormatItem(const std::string& s)
+      : FormatItem(Spec{}), m_str(s) {}
+    StringFormatItem(const Spec& spec)
+      : FormatItem(spec), m_str(spec.optionalPara) {}
+public:
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+    std::string m_str;
+};
 
+class DateFormatItem : public FormatItem
+{
+public:
+    DateFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+class LevelFormatItem : public FormatItem
+{
+public:
+    LevelFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+class LoggerNameFormatItem : public FormatItem
+{
+public:
+    LoggerNameFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+class MessageFormatItem : public FormatItem
+{
+public:
+    MessageFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
+
+class NewLineFormatItem : public FormatItem
+{
+public:
+    NewLineFormatItem(const Spec& spec) : FormatItem(spec) {}
+    void format(std::ostream& os, LogEventPtr event) override; 
+private:
+};
 }
